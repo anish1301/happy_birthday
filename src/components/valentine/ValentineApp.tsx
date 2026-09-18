@@ -19,7 +19,7 @@ type Page = 'lock' | 'error' | 'envelope' | 'letter' | 'memories' | 'flowers' | 
 
 
 const ValentineApp = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('scene');
+  const [currentPage, setCurrentPage] = useState<Page>('lock');
   const [musicVibe, setMusicVibe] = useState<'romantic' | 'inspecting'>('inspecting');
 
   const goToPage = useCallback((page: Page) => {
