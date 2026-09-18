@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import ErrorPage from './ErrorPage';
 import EnvelopePage from './EnvelopePage';
@@ -11,13 +11,15 @@ import BackgroundMusic from './BackgroundMusic';
 import CursorTrail from './CursorTrail';
 import InteractiveSparkles from './InteractiveSparkles';
 import LockPage from './LockPage';
+// Heavy: pulls in three/fiber/drei. Only loaded once the flow reaches the end.
+const ScenePage = lazy(() => import('./ScenePage'));
 
-type Page = 'lock' | 'error' | 'envelope' | 'letter' | 'memories' | 'flowers' | 'question' | 'closing';
+type Page = 'lock' | 'error' | 'envelope' | 'letter' | 'memories' | 'flowers' | 'question' | 'closing' | 'scene';
 
 
 
 const ValentineApp = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('lock');
+  const [currentPage, setCurrentPage] = useState<Page>('scene');
   const [musicVibe, setMusicVibe] = useState<'romantic' | 'inspecting'>('inspecting');
 
   const goToPage = useCallback((page: Page) => {
@@ -42,8 +44,8 @@ const ValentineApp = () => {
       <BackgroundMusic isActive={true} vibe={musicVibe} />
 
 
-      <CursorTrail isActive={currentPage !== 'error'} />
-      <InteractiveSparkles isActive={currentPage !== 'error'} />
+      <CursorTrail isActive={currentPage !== 'error' && currentPage !== 'scene'} />
+      <InteractiveSparkles isActive={currentPage !== 'error' && currentPage !== 'scene'} />
       <AnimatePresence mode="wait">
         {currentPage === 'lock' && (
           <motion.div
@@ -142,7 +144,21 @@ const ValentineApp = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <ClosingPage onReplay={handleReplay} />
+            <ClosingPage onComplete={() => goToPage('scene')} />
+          </motion.div>
+        )}
+
+        {currentPage === 'scene' && (
+          <motion.div
+            key="scene"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Suspense fallback={<div className="h-screen w-full bg-black" />}>
+              <ScenePage onReplay={handleReplay} />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>

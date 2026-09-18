@@ -234,7 +234,7 @@ const Home = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Start Valentine's Journey
+            Start Your Journey
           </MotionLink>
         </motion.div>
       </div>

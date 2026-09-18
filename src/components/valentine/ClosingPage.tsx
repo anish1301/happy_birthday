@@ -1,16 +1,54 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import FloatingHearts from './FloatingHearts';
 import HeartIcon from './icons/HeartIcon';
-import ReplayIcon from './icons/ReplayIcon';
 import SparkleIcon from './icons/SparkleIcon';
 import { useSound } from '../../hooks/useSound';
 
+const COUNTDOWN_FROM = 4;
+
 interface ClosingPageProps {
-  onReplay: () => void;
+  onComplete: () => void;
 }
 
-const ClosingPage = ({ onReplay }: ClosingPageProps) => {
+const ClosingPage = ({ onComplete }: ClosingPageProps) => {
   const { playSound } = useSound();
+  const [count, setCount] = useState(COUNTDOWN_FROM);
+
+  // Pull the 3D chunk and the model down now, so the countdown is doing real work
+  useEffect(() => {
+    let cancelled = false;
+    import('./ScenePage').then((m) => {
+      if (!cancelled) m.preloadScene();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // The countdown picks up where the replay button used to appear
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setStarted(true), 3000);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+
+    if (count === 0) {
+      onComplete();
+      return;
+    }
+
+    const t = window.setTimeout(() => {
+      playSound('sparkle');
+      setCount((c) => c - 1);
+    }, 1000);
+
+    return () => window.clearTimeout(t);
+  }, [started, count, onComplete, playSound]);
 
   return (
     <div className="page-container gradient-romantic flex flex-col items-center justify-center px-4">
@@ -115,22 +153,24 @@ const ClosingPage = ({ onReplay }: ClosingPageProps) => {
           </motion.div>
         </motion.div>
 
-        {/* Replay button */}
-        <motion.button
-          className="text-muted-foreground hover:text-primary transition-colors duration-300 flex items-center gap-3 mx-auto group cursor-pointer"
-          onClick={() => {
-            playSound('buttonClick');
-            playSound('sparkle');
-            onReplay();
-          }}
+        {/* Countdown into the scene */}
+        <motion.div
+          className="flex flex-col items-center gap-3 text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 3 }}
-          whileHover={{ scale: 1.05 }}
         >
-          <ReplayIcon size={20} color="currentColor" animate />
-          <span className="font-serif-italic">Replay from the beginning</span>
-        </motion.button>
+          <span className="font-serif-italic">one more thing...</span>
+          <motion.span
+            key={count}
+            className="font-heavy text-4xl text-primary"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            {count}
+          </motion.span>
+        </motion.div>
       </motion.div>
 
       {/* Footer hearts drifting up */}

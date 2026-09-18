@@ -180,7 +180,7 @@ const ErrorPage = ({ onComplete }: ErrorPageProps) => {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
       >
-        <span className="font-mono">2025.02.14</span>
+        <span className="font-mono">2026.09.19</span>
       </motion.div>
     </div>
   );

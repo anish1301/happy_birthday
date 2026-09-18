@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import FloatingHearts from '@/components/valentine/FloatingHearts';
 import { useSound } from '@/hooks/useSound';
+import { exportScrapbookToPdf } from '@/lib/scrapbookPdf';
 
 interface Page {
   id: string;
@@ -24,6 +26,8 @@ const ScrapbookCreator = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const { playSound } = useSound();
 
   const stickers = ['❤️', '💕', '💖', '🌹', '✨', '💫', '🌟', '🎀', '💐', '🦋'];
@@ -78,10 +82,30 @@ const ScrapbookCreator = () => {
     playSound('success');
   };
 
-  const exportPDF = () => {
-    // Simple export - in production, use a library like jsPDF
-    alert('PDF export feature - implement with jsPDF library');
-    playSound('success');
+  const exportPDF = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || isExporting) return;
+
+    const hasContent = pages.some((page) => page.elements.length > 0);
+    if (!hasContent) {
+      toast('Add something to the page first.');
+      return;
+    }
+
+    setIsExporting(true);
+    // Drop the selection ring so it doesn't read as part of the layout
+    setSelectedElement(null);
+
+    try {
+      await exportScrapbookToPdf(pages, canvas.clientWidth, canvas.clientHeight);
+      playSound('success');
+      toast.success(`Saved ${pages.length} ${pages.length === 1 ? 'page' : 'pages'} as PDF`);
+    } catch (error) {
+      console.error('Scrapbook PDF export failed:', error);
+      toast.error("Couldn't create the PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -143,8 +167,12 @@ const ScrapbookCreator = () => {
             <button onClick={addPage} className="px-4 py-2 bg-primary/10 text-primary rounded-lg">
               Add Page
             </button>
-            <button onClick={exportPDF} className="px-4 py-2 btn-romantic">
-              Export PDF
+            <button
+              onClick={exportPDF}
+              disabled={isExporting}
+              className="px-4 py-2 btn-romantic disabled:opacity-60"
+            >
+              {isExporting ? 'Exporting...' : 'Export PDF'}
             </button>
           </div>
         </motion.div>
@@ -170,6 +198,7 @@ const ScrapbookCreator = () => {
 
         {/* Canvas */}
         <motion.div
+          ref={canvasRef}
           className="bg-white rounded-2xl shadow-elevated p-8 min-h-[600px] relative"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
